@@ -1,4 +1,4 @@
-// 文件: public/extensions/third-party/day7/index.js
+// 文件: public/extensions/third-party/dayX/index.js
 
 import { extension_settings, loadExtensionSettings, getContext, renderExtensionTemplateAsync } from '../../../extensions.js';
 import { saveSettingsDebounced, eventSource, event_types } from '../../../../script.js';
@@ -7,8 +7,8 @@ import { getTokenCountAsync } from '../../../tokenizers.js';
 
 (function () {
     // --- 插件基础信息 (不变) ---
-    const extensionName = "day7";
-    const pluginFolderName = "day7";
+    const extensionName = "dayX";
+    const pluginFolderName = "dayX";
     const extensionFolderPath = `scripts/extensions/third-party/${pluginFolderName}`;
     const extensionSettings = extension_settings[extensionName] || {};
     const defaultSettings = {};
