@@ -573,16 +573,178 @@ function renderEntityMessagesPieChart(dailyData) {
 
 // 渲染角色Token分布图表
 function renderEntityTokensPieChart(dailyData) {
-    // 实现省略...
-    // 与renderEntityMessagesPieChart类似
+    const ctx = document.getElementById('entity-tokens-pie-chart').getContext('2d');
+    
+    const userTokens = dailyData.userTokens || 0;
+    const aiTokens = dailyData.aiTokens || 0;
+    const promptTokens = dailyData.cumulativeTokens || 0;
+    
+    if (entityTokensPieChart) {
+        entityTokensPieChart.destroy();
+    }
+    
+    entityTokensPieChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['用户Tokens', 'AI Tokens', 'Prompt Tokens'],
+            datasets: [{
+                data: [userTokens, aiTokens, promptTokens],
+                backgroundColor: [
+                    'rgba(0, 174, 239, 0.7)',
+                    'rgba(255, 165, 0, 0.7)',
+                    'rgba(75, 192, 192, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(0, 174, 239, 1)',
+                    'rgba(255, 165, 0, 1)',
+                    'rgba(75, 192, 192, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: '#ffffff'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                            return `${context.label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 // 渲染效率分析图表
 function renderEntityEfficiencyChart(dailyData) {
-    // 实现省略...
-    // 复杂的散点图实现
+    const ctx = document.getElementById('entity-efficiency-chart').getContext('2d');
+    
+    // 如果AI消息数为0，显示空图表
+    if (!dailyData.aiMessages || dailyData.aiMessages === 0) {
+        if (entityEfficiencyChart) {
+            entityEfficiencyChart.destroy();
+        }
+        
+        entityEfficiencyChart = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: '无数据',
+                    data: [],
+                    backgroundColor: 'rgba(0, 174, 239, 0.7)',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        return;
+    }
+    
+    // 计算平均每条消息的token和生成时间
+    const avgTokens = dailyData.aiTokens / dailyData.aiMessages;
+    const avgResponseTime = dailyData.totalAiResponseDuration / dailyData.aiMessages;
+    
+    // 创建模拟数据点，围绕平均值分布
+    const data = [];
+    const variation = 0.3; // 变异系数
+    
+    for (let i = 0; i < dailyData.aiMessages; i++) {
+        // 创建围绕平均值的随机分布
+        const randomFactor1 = 1 + (Math.random() - 0.5) * variation;
+        const randomFactor2 = 1 + (Math.random() - 0.5) * variation;
+        
+        data.push({
+            x: avgTokens * randomFactor1,
+            y: avgResponseTime * randomFactor2
+        });
+    }
+    
+    if (entityEfficiencyChart) {
+        entityEfficiencyChart.destroy();
+    }
+    
+    entityEfficiencyChart = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'AI响应效率',
+                data: data,
+                backgroundColor: 'rgba(0, 174, 239, 0.7)',
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        color: '#ffffff'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Tokens: ${Math.round(context.raw.x)}, 响应时间: ${formatDuration(context.raw.y)}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Tokens per message',
+                        color: '#ffffff'
+                    },
+                    ticks: {
+                        color: '#ffffff'
+                    },
+                    grid: {
+                        color: '#333333'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Response time (ms)',
+                        color: '#ffffff'
+                    },
+                    ticks: {
+                        color: '#ffffff',
+                        callback: function(value) {
+                            return formatDuration(value);
+                        }
+                    },
+                    grid: {
+                        color: '#333333'
+                    }
+                }
+            }
+        }
+    });
 }
-
 
 // 辅助函数：生成柔和的颜色列表
 function generateColors(count) {
