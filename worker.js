@@ -1,4 +1,4 @@
-// 文件: public/extensions/third-party/day7/worker.js
+// 文件: public/extensions/third-party/dayX/worker.js
 
 const DB_NAME = 'SillyTavernDay1Stats';
 const STORE_NAME = 'dailyStats';
