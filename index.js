@@ -452,18 +452,94 @@ import { getTokenCountAsync } from '../../../tokenizers.js';
         }
     }
 
+
     // --- 插件初始化 ---
     jQuery(async () => {
         console.log(`${LOG_PREFIX_MAIN} Initializing extension...`);
         extension_settings[extensionName] = extension_settings[extensionName] || {};
         Object.assign(extension_settings[extensionName], { ...defaultSettings, ...extension_settings[extensionName] });
-
+    
         try {
             await openDBMain();
             console.log(`${LOG_PREFIX_MAIN} Initial DB open successful.`);
         } catch (error) { console.error(`${LOG_PREFIX_MAIN} DB init failed:`, error); }
-
-
+    
+        try {
+            console.log(`${LOG_PREFIX_MAIN} Rendering settings UI...`);
+            const settingsHtml = await renderExtensionTemplateAsync(`third-party/${pluginFolderName}`, 'settings_display');
+            const targetContainer = $('#extensions_settings') || $('#extension_settings') || $('body');
+            if (targetContainer.length) {
+                targetContainer.append(settingsHtml);
+    
+                // *** 获取新添加的 UI 元素 ***
+                const dateSelector = $('#day1-date-selector');
+                const gotoTodayButton = $('#day1-goto-today-button');
+                const refreshButton = $('#day1-refresh-button'); // 已有按钮
+                const reportButton = $('#day1-report-button'); // 获取日报按钮
+    
+                // *** 初始化日期选择器为当天 ***
+                dateSelector.val(selectedDateString);
+                console.log(`${LOG_PREFIX_MAIN} Date selector initialized to: ${selectedDateString}`);
+    
+                // *** 日期选择器改变事件 ***
+                dateSelector.on('change', () => {
+                    const newDate = dateSelector.val();
+                    if (newDate && newDate !== selectedDateString) {
+                        console.log(`${LOG_PREFIX_MAIN} Date selected: ${newDate}`);
+                        selectedDateString = newDate;
+                        updateStatsTable(selectedDateString); // 使用新日期更新表格
+                    } else {
+                        console.log(`${LOG_PREFIX_MAIN} Date selector changed but value is invalid or same.`);
+                    }
+                });
+    
+                // *** "跳转到今天"按钮点击事件 ***
+                gotoTodayButton.on('click', () => {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    console.log(`${LOG_PREFIX_MAIN} Go to Today button clicked.`);
+                    if (selectedDateString !== todayStr) {
+                        selectedDateString = todayStr;
+                        dateSelector.val(selectedDateString); // 更新输入框显示
+                        updateStatsTable(selectedDateString); // 更新表格
+                    } else {
+                         console.log(`${LOG_PREFIX_MAIN} Already on today's date.`);
+                    }
+                });
+    
+                // *** 修改"刷新统计"按钮点击事件 ***
+                refreshButton.on('click', () => {
+                    console.log(`${LOG_PREFIX_MAIN} Refresh button clicked for date: ${selectedDateString}`);
+    
+                    // 1. 记录当前实时时长（如果页面可见），这部分逻辑与日期选择无关，总是记录"现在"
+                    if (document.visibilityState === 'visible') {
+                        console.log(`${LOG_PREFIX_MAIN} Refresh clicked while visible. Recording current real-time durations before update...`);
+                        recordVisibleDuration();
+                        lastVisibleTimestamp = Date.now(); // 重置以继续追踪
+                        recordEntityDuration();
+                        if (currentEntityId) {
+                            entityStartTime = Date.now(); // 重置以继续追踪
+                        }
+                        console.log(`${LOG_PREFIX_MAIN} Reset real-time timestamps after manual record.`);
+                    } else {
+                        console.log(`${LOG_PREFIX_MAIN} Refresh clicked while not visible. Real-time durations should have been recorded.`);
+                    }
+    
+                    // 2. （可选延迟后）更新表格，显示的是当前选定日期的数据
+                    setTimeout(() => {
+                        console.log(`${LOG_PREFIX_MAIN} Updating stats table display for selected date: ${selectedDateString}.`);
+                        updateStatsTable(selectedDateString); // 使用当前选定的日期刷新
+                    }, 50);
+                });
+    
+                console.log(`${LOG_PREFIX_MAIN} Settings UI appended and listeners attached.`);
+                // *** 初始加载时使用选定日期（即当天） ***
+                setTimeout(() => updateStatsTable(selectedDateString), 500);
+    
+            } else {
+                 console.warn(`${LOG_PREFIX_MAIN} Target container for settings UI not found.`);
+            }
+        } catch (error) { console.error(`${LOG_PREFIX_MAIN} Error loading settings UI:`, error); }
+    
         try {
             console.log(`${LOG_PREFIX_MAIN} 加载日报组件...`);
             
@@ -488,92 +564,32 @@ import { getTokenCountAsync } from '../../../tokenizers.js';
                 document.head.appendChild(chartScript);
             }
             
-            // 5. 添加报表JS脚本
+            // 5. 添加报表JS脚本并等待加载完成
             const reportScript = document.createElement('script');
             reportScript.src = `scripts/extensions/third-party/${pluginFolderName}/report.js`;
+            reportScript.onload = function() {
+                console.log(`${LOG_PREFIX_MAIN} 日报脚本加载完成，正在绑定按钮事件...`);
+                // 手动为日报按钮绑定事件
+                if (typeof openMainReportModal === 'function') {
+                    // 获取设置界面中的日报按钮
+                    const reportButton = document.getElementById('day1-report-button');
+                    if (reportButton) {
+                        reportButton.onclick = openMainReportModal;
+                        console.log(`${LOG_PREFIX_MAIN} 已成功为日报按钮绑定点击事件`);
+                    } else {
+                        console.error(`${LOG_PREFIX_MAIN} 未找到日报按钮元素`);
+                    }
+                } else {
+                    console.error(`${LOG_PREFIX_MAIN} openMainReportModal函数未定义，report.js可能未正确加载`);
+                }
+            };
             document.body.appendChild(reportScript);
             
-            console.log(`${LOG_PREFIX_MAIN} 日报组件加载完成`);
+            console.log(`${LOG_PREFIX_MAIN} 日报组件加载请求完成，等待脚本执行`);
         } catch (error) {
             console.error(`${LOG_PREFIX_MAIN} 加载日报组件失败:`, error);
         }
     
-
-        try {
-            console.log(`${LOG_PREFIX_MAIN} Rendering settings UI...`);
-            const settingsHtml = await renderExtensionTemplateAsync(`third-party/${pluginFolderName}`, 'settings_display');
-            const targetContainer = $('#extensions_settings') || $('#extension_settings') || $('body');
-            if (targetContainer.length) {
-                targetContainer.append(settingsHtml);
-
-                // *** 获取新添加的 UI 元素 ***
-                const dateSelector = $('#day1-date-selector');
-                const gotoTodayButton = $('#day1-goto-today-button');
-                const refreshButton = $('#day1-refresh-button'); // 已有按钮
-
-                // *** 初始化日期选择器为当天 ***
-                dateSelector.val(selectedDateString);
-                console.log(`${LOG_PREFIX_MAIN} Date selector initialized to: ${selectedDateString}`);
-
-                // *** 日期选择器改变事件 ***
-                dateSelector.on('change', () => {
-                    const newDate = dateSelector.val();
-                    if (newDate && newDate !== selectedDateString) {
-                        console.log(`${LOG_PREFIX_MAIN} Date selected: ${newDate}`);
-                        selectedDateString = newDate;
-                        updateStatsTable(selectedDateString); // 使用新日期更新表格
-                    } else {
-                        console.log(`${LOG_PREFIX_MAIN} Date selector changed but value is invalid or same.`);
-                    }
-                });
-
-                // *** “跳转到今天”按钮点击事件 ***
-                gotoTodayButton.on('click', () => {
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    console.log(`${LOG_PREFIX_MAIN} Go to Today button clicked.`);
-                    if (selectedDateString !== todayStr) {
-                        selectedDateString = todayStr;
-                        dateSelector.val(selectedDateString); // 更新输入框显示
-                        updateStatsTable(selectedDateString); // 更新表格
-                    } else {
-                         console.log(`${LOG_PREFIX_MAIN} Already on today's date.`);
-                    }
-                });
-
-                // *** 修改“刷新统计”按钮点击事件 ***
-                refreshButton.on('click', () => {
-                    console.log(`${LOG_PREFIX_MAIN} Refresh button clicked for date: ${selectedDateString}`);
-
-                    // 1. 记录当前实时时长（如果页面可见），这部分逻辑与日期选择无关，总是记录“现在”
-                    if (document.visibilityState === 'visible') {
-                        console.log(`${LOG_PREFIX_MAIN} Refresh clicked while visible. Recording current real-time durations before update...`);
-                        recordVisibleDuration();
-                        lastVisibleTimestamp = Date.now(); // 重置以继续追踪
-                        recordEntityDuration();
-                        if (currentEntityId) {
-                            entityStartTime = Date.now(); // 重置以继续追踪
-                        }
-                        console.log(`${LOG_PREFIX_MAIN} Reset real-time timestamps after manual record.`);
-                    } else {
-                        console.log(`${LOG_PREFIX_MAIN} Refresh clicked while not visible. Real-time durations should have been recorded.`);
-                    }
-
-                    // 2. （可选延迟后）更新表格，显示的是当前选定日期的数据
-                    setTimeout(() => {
-                        console.log(`${LOG_PREFIX_MAIN} Updating stats table display for selected date: ${selectedDateString}.`);
-                        updateStatsTable(selectedDateString); // 使用当前选定的日期刷新
-                    }, 50);
-                });
-
-                console.log(`${LOG_PREFIX_MAIN} Settings UI appended and listeners attached.`);
-                // *** 初始加载时使用选定日期（即当天） ***
-                setTimeout(() => updateStatsTable(selectedDateString), 500);
-
-            } else {
-                 console.warn(`${LOG_PREFIX_MAIN} Target container for settings UI not found.`);
-            }
-        } catch (error) { console.error(`${LOG_PREFIX_MAIN} Error loading settings UI:`, error); }
-
         try {
             console.log(`${LOG_PREFIX_MAIN} Initializing Web Worker...`);
             const workerPath = `${extensionFolderPath}/worker.js`;
@@ -581,7 +597,7 @@ import { getTokenCountAsync } from '../../../tokenizers.js';
             day1Worker.onerror = (error) => { console.error(`${LOG_PREFIX_MAIN} Worker error:`, error.message, error); };
             console.log(`${LOG_PREFIX_MAIN} Web Worker initialized.`);
         } catch (error) { console.error(`${LOG_PREFIX_MAIN} Failed to initialize Worker:`, error); day1Worker = null; }
-
+    
         // --- 注册核心事件监听器 (GENERATE_AFTER_DATA, MESSAGE_RECEIVED, GENERATION_STOPPED - 不变) ---
          console.log(`${LOG_PREFIX_MAIN} Registering core event listeners...`);
         eventSource.on(event_types.MESSAGE_SENT, onMessageSent); // (不变)
@@ -627,11 +643,11 @@ import { getTokenCountAsync } from '../../../tokenizers.js';
                 pendingTokenConsumptionLog = false; lastCalculatedPromptTokens = 0; // (不变)
             }
         });
-
+    
         // --- 添加 visibilitychange 监听器 (不变) ---
          console.log(`${LOG_PREFIX_MAIN} Adding visibilitychange listener.`);
         document.addEventListener('visibilitychange', handleVisibilityChange);
-
+    
         // --- 初始化时处理当前状态 (不变，但 onChatChanged 内部调用 updateStatsTable 已修改) ---
          console.log(`${LOG_PREFIX_MAIN} Initializing state based on current context...`);
         const initialContext = getContext();
@@ -648,7 +664,7 @@ import { getTokenCountAsync } from '../../../tokenizers.js';
              lastVisibleTimestamp = null;
              entityStartTime = null;
         }
-
+    
         console.log(`${LOG_PREFIX_MAIN} Initialization complete.`);
     });
 
