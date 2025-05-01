@@ -1,0 +1,167 @@
+<!-- 主日报模态框 -->
+<div id="main-report-modal" class="modal">
+    <div class="modal-content">
+        <button class="close-button" onclick="closeMainModal()">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-5xl font-bold text-highlight">聊天日报</h1>
+                <p class="text-lg text-gray-400" id="report-date"></p>
+            </div>
+            
+            <!-- Bento Grid Layout -->
+            <div class="bento-grid">
+                <!-- 关键指标卡片 -->
+                <div class="card col-span-12 md:col-span-6">
+                    <h2 class="text-xl font-bold mb-4">核心指标</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-dark-100 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500">Total Online Duration</p>
+                            <p class="text-4xl font-bold text-highlight" id="total-online-duration">0s</p>
+                            <p class="text-sm text-gray-400">总在线时长</p>
+                        </div>
+                        <div class="bg-dark-100 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500">Total Entities</p>
+                            <p class="text-4xl font-bold text-highlight" id="total-entities">0</p>
+                            <p class="text-sm text-gray-400">角色/群组数</p>
+                        </div>
+                        <div class="bg-dark-100 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500">Total Messages</p>
+                            <p class="text-4xl font-bold text-highlight" id="total-messages">0</p>
+                            <p class="text-sm text-gray-400">消息总数</p>
+                        </div>
+                        <div class="bg-dark-100 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500">Total Tokens</p>
+                            <p class="text-4xl font-bold text-highlight" id="total-tokens">0</p>
+                            <p class="text-sm text-gray-400">Token总量</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 时长占比 -->
+                <div class="card col-span-12 md:col-span-6">
+                    <h2 class="text-xl font-bold mb-4">角色互动时间占比</h2>
+                    <div class="h-64">
+                        <canvas id="duration-pie-chart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 消息数对比 -->
+                <div class="card col-span-12 md:col-span-6">
+                    <h2 class="text-xl font-bold mb-4">消息数对比</h2>
+                    <div class="h-64">
+                        <canvas id="messages-bar-chart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Token消耗对比 -->
+                <div class="card col-span-12 md:col-span-6">
+                    <h2 class="text-xl font-bold mb-4">Token消耗对比</h2>
+                    <div class="h-64">
+                        <canvas id="tokens-bar-chart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- AI响应时间对比 -->
+                <div class="card col-span-12">
+                    <h2 class="text-xl font-bold mb-4">AI响应时间对比</h2>
+                    <div class="h-64">
+                        <canvas id="ai-response-time-chart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 角色列表 -->
+                <div class="card col-span-12">
+                    <h2 class="text-xl font-bold mb-4">角色列表</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="text-left border-b border-dark-300">
+                                    <th class="pb-2">角色名称</th>
+                                    <th class="pb-2">消息数</th>
+                                    <th class="pb-2">交互时长</th>
+                                    <th class="pb-2">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="entity-list-body">
+                                <!-- 动态生成的角色列表 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 角色日报模态框 -->
+<div id="entity-report-modal" class="modal">
+    <div class="modal-content">
+        <button class="close-button" onclick="closeEntityModal()">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-5xl font-bold text-highlight" id="entity-report-title">角色日报</h1>
+                <p class="text-lg text-gray-400" id="entity-report-date"></p>
+            </div>
+            
+            <!-- Bento Grid Layout -->
+            <div class="bento-grid">
+                <!-- 角色关键指标卡片 -->
+                <div class="card col-span-12">
+                    <h2 class="text-xl font-bold mb-4">角色核心指标</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-dark-100 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500">Interaction Duration</p>
+                            <p class="text-4xl font-bold text-highlight" id="entity-interaction-duration">0s</p>
+                            <p class="text-sm text-gray-400">互动时长</p>
+                        </div>
+                        <div class="bg-dark-100 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500">Total Messages</p>
+                            <p class="text-4xl font-bold text-highlight" id="entity-total-messages">0</p>
+                            <p class="text-sm text-gray-400">消息总数</p>
+                        </div>
+                        <div class="bg-dark-100 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500">Total Tokens</p>
+                            <p class="text-4xl font-bold text-highlight" id="entity-total-tokens">0</p>
+                            <p class="text-sm text-gray-400">Token总量</p>
+                        </div>
+                        <div class="bg-dark-100 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500">AI Response Time</p>
+                            <p class="text-4xl font-bold text-highlight" id="entity-ai-response-time">0s</p>
+                            <p class="text-sm text-gray-400">AI响应时间</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 消息比例 -->
+                <div class="card col-span-12 md:col-span-6">
+                    <h2 class="text-xl font-bold mb-4">消息比例</h2>
+                    <div class="h-64">
+                        <canvas id="entity-messages-pie-chart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Token分布 -->
+                <div class="card col-span-12 md:col-span-6">
+                    <h2 class="text-xl font-bold mb-4">Token分布</h2>
+                    <div class="h-64">
+                        <canvas id="entity-tokens-pie-chart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 效率分析 -->
+                <div class="card col-span-12">
+                    <h2 class="text-xl font-bold mb-4">效率分析</h2>
+                    <div class="h-64">
+                        <canvas id="entity-efficiency-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
