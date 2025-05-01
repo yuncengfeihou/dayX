@@ -805,46 +805,9 @@ function setupIntersectionObserver() {
     });
 }
 
-// 注入日报按钮到原始界面
-function injectReportButton() {
-    // 找到日期选择器旁边的按钮组
-    const dateButtonsContainer = document.querySelector('#day1-goto-today-button')?.parentElement;
-    
-    if (dateButtonsContainer) {
-        // 创建日报按钮
-        const reportButton = document.createElement('button');
-        reportButton.id = 'day1-report-button';
-        reportButton.className = 'menu_button';
-        reportButton.title = '查看日报';
-        reportButton.innerHTML = '<i class="fa-solid fa-chart-pie"></i> 日报';
-        reportButton.onclick = openMainReportModal;
-        
-        // 添加按钮到日期选择器旁边
-        dateButtonsContainer.appendChild(reportButton);
-        console.log('日报按钮已注入');
-    } else {
-        console.error('未找到日期按钮容器，无法注入日报按钮');
-        
-        // 尝试在刷新按钮后添加
-        const refreshButton = document.querySelector('#day1-refresh-button');
-        if (refreshButton) {
-            const reportButton = document.createElement('button');
-            reportButton.id = 'day1-report-button';
-            reportButton.className = 'menu_button';
-            reportButton.title = '查看日报';
-            reportButton.innerHTML = '<i class="fa-solid fa-chart-pie"></i> 日报';
-            reportButton.onclick = openMainReportModal;
-            
-            refreshButton.parentNode.insertBefore(reportButton, refreshButton.nextSibling);
-            console.log('日报按钮已添加到刷新按钮后');
-        }
-    }
-}
 
 // 初始化函数
 function initDailyReport() {
-    // 注入日报按钮
-    injectReportButton();
     
     // 设置卡片动画观察器
     setupIntersectionObserver();
