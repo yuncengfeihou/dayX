@@ -463,6 +463,42 @@ import { getTokenCountAsync } from '../../../tokenizers.js';
             console.log(`${LOG_PREFIX_MAIN} Initial DB open successful.`);
         } catch (error) { console.error(`${LOG_PREFIX_MAIN} DB init failed:`, error); }
 
+
+        try {
+            console.log(`${LOG_PREFIX_MAIN} 加载日报组件...`);
+            
+            // 1. 加载日报HTML模板
+            const reportHtml = await fetch(`scripts/extensions/third-party/${pluginFolderName}/report.html`)
+                .then(response => response.text());
+            
+            // 2. 将HTML添加到页面底部
+            $('body').append(reportHtml);
+            
+            // 3. 添加CSS样式
+            const reportCssLink = document.createElement('link');
+            reportCssLink.rel = 'stylesheet';
+            reportCssLink.href = `scripts/extensions/third-party/${pluginFolderName}/report.css`;
+            document.head.appendChild(reportCssLink);
+            
+            // 4. 添加Chart.js依赖
+            if (!document.getElementById('chartjs-script')) {
+                const chartScript = document.createElement('script');
+                chartScript.id = 'chartjs-script';
+                chartScript.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                document.head.appendChild(chartScript);
+            }
+            
+            // 5. 添加报表JS脚本
+            const reportScript = document.createElement('script');
+            reportScript.src = `scripts/extensions/third-party/${pluginFolderName}/report.js`;
+            document.body.appendChild(reportScript);
+            
+            console.log(`${LOG_PREFIX_MAIN} 日报组件加载完成`);
+        } catch (error) {
+            console.error(`${LOG_PREFIX_MAIN} 加载日报组件失败:`, error);
+        }
+    
+
         try {
             console.log(`${LOG_PREFIX_MAIN} Rendering settings UI...`);
             const settingsHtml = await renderExtensionTemplateAsync(`third-party/${pluginFolderName}`, 'settings_display');
